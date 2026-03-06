@@ -1,6 +1,7 @@
 use std::{env, error::Error, io::ErrorKind};
 
 use rusqlite::Connection;
+use serde::{Deserialize, Serialize};
 
 const DB_FILE: &str = "db.db";
 
@@ -134,12 +135,15 @@ impl User {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct Flag {
     name: String,
     description: String,
     flag: String,
     points: i32,
+    #[serde(default)]
     id: i32,
+    #[serde(skip_serializing, default)]
     solved: bool,
 }
 

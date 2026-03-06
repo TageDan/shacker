@@ -1,0 +1,37 @@
+[
+  {
+    "name": "flag1",
+    "description": "hard flag",
+    "flag": "ctf{flag_1337}",
+    "points": 500,
+    "id": 2
+  },
+  {
+    "name": "flag2",
+    "description": "medium flag",
+    "flag": "ctf{flag_leet}",
+    "points": 300,
+    "id": 3
+  },
+  {
+    "name": "mdflag",
+    "description": "# markdown flag\n[with links](https://github.com)",
+    "flag": "ctf{flag_md}",
+    "points": 300,
+    "id": 4
+  },
+  {
+    "name": "longflag",
+    "description": "A REALLY LONG FLAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n\n\n\n\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAG!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n\n\n\n\n\n\n\n\n\n\n(very long)",
+    "flag": "ctf{flag_md}",
+    "points": 300,
+    "id": 5
+  },
+  {
+    "name": "flag_add_cli",
+    "description": "added_flag",
+    "flag": "flag123",
+    "points": 1337,
+    "id": 6
+  }
+]

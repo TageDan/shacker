@@ -1294,6 +1294,8 @@ dependencies = [
  "clap",
  "ratatui",
  "rusqlite",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

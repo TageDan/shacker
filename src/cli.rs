@@ -1,8 +1,13 @@
-use std::path::PathBuf;
+use std::{
+    fs::File,
+    io::{BufReader, Read, Write},
+    path::PathBuf,
+};
 
 use clap::{Parser, Subcommand};
+use serde_json::from_str;
 
-use crate::database;
+use crate::database::{self, Flag};
 
 #[derive(Parser)]
 pub struct Args {
@@ -14,14 +19,15 @@ pub struct Args {
 pub enum Commands {
     /// Run the server (WIP)
     Run,
-    /// Add/Delete/List flags (WIP)
+    /// Add/Delete/List flags
+    ///  (should be used before ctf starts as it will change flag id's and hence remove solves)
+    // TODO: fix this
     Flags {
         #[command(subcommand)]
         command: FlagCommands,
     },
 }
 
-/// Commands to modify flags
 #[derive(Subcommand)]
 pub enum FlagCommands {
     /// list flags in a tidy list
@@ -81,7 +87,39 @@ impl FlagCommands {
                 points,
                 flag,
             } => database::create_flag(&name, &description, *points, &flag),
-            _ => todo!(),
+            FlagCommands::Write { path } => {
+                let mut file: Box<dyn Write> = match path {
+                    None => Box::new(std::io::stdout()),
+                    Some(path) => {
+                        let file = File::create(path).unwrap();
+                        Box::new(file)
+                    }
+                };
+                let flags = Flag::get_all().unwrap();
+                let flags_string = serde_json::to_string(&flags).unwrap();
+                file.write_all(flags_string.as_bytes()).unwrap();
+            }
+            FlagCommands::Load { path } => {
+                let mut file: Box<dyn Read> = match path {
+                    None => Box::new(std::io::stdin()),
+                    Some(path) => {
+                        let file = File::open(path).unwrap();
+                        Box::new(file)
+                    }
+                };
+                let mut content = String::new();
+                file.read_to_string(&mut content).unwrap();
+                let flags: Vec<Flag> = from_str(&content).unwrap();
+                database::clear_flags();
+                for flag in flags {
+                    database::create_flag(
+                        flag.name(),
+                        flag.description(),
+                        flag.points(),
+                        flag.flag(),
+                    );
+                }
+            }
         }
     }
 }
