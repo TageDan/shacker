@@ -22,7 +22,10 @@ pub struct LoginScreen {
 }
 
 impl Screen for LoginScreen {
-    fn handle_input(&mut self, key: (KeyCode, KeyModifiers)) -> Option<Box<dyn Screen>> {
+    fn handle_input(
+        &mut self,
+        key: (KeyCode, KeyModifiers),
+    ) -> Option<Box<dyn Screen + Sync + Send>> {
         // Remove error on input
         self.error = None;
         match key {
@@ -83,7 +86,7 @@ impl Screen for LoginScreen {
 }
 
 impl LoginScreen {
-    fn submit(&mut self) -> Option<Box<dyn Screen>> {
+    fn submit(&mut self) -> Option<Box<dyn Screen + Sync + Send>> {
         if self.selected == 1 {
             match database::User::login(&self.username, &self.password) {
                 Ok(u) => return Some(Box::new(BrowseScreen::new(u))),

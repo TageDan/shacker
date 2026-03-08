@@ -23,7 +23,10 @@ pub struct RegisterScreen {
 }
 
 impl Screen for RegisterScreen {
-    fn handle_input(&mut self, key: (KeyCode, KeyModifiers)) -> Option<Box<dyn Screen>> {
+    fn handle_input(
+        &mut self,
+        key: (KeyCode, KeyModifiers),
+    ) -> Option<Box<dyn Screen + Send + Sync>> {
         // Remove error on input
         self.error = None;
         match key {
@@ -95,7 +98,7 @@ impl Screen for RegisterScreen {
 }
 
 impl RegisterScreen {
-    fn submit(&mut self) -> Option<Box<dyn Screen>> {
+    fn submit(&mut self) -> Option<Box<dyn Screen + Send + Sync>> {
         if self.selected == 2 {
             if self.password != self.confirm {
                 self.error = Some("passwords doesn't match".to_string());

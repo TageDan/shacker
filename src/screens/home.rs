@@ -16,7 +16,10 @@ pub struct HomeScreen {
 }
 
 impl Screen for HomeScreen {
-    fn handle_input(&mut self, key: (KeyCode, KeyModifiers)) -> Option<Box<dyn Screen>> {
+    fn handle_input(
+        &mut self,
+        key: (KeyCode, KeyModifiers),
+    ) -> Option<Box<dyn Screen + Sync + Send>> {
         match key {
             (KeyCode::Enter, _) => return self.submit(),
             (KeyCode::Tab, _) | (KeyCode::Down, _) => self.focus_next(),
@@ -71,7 +74,7 @@ impl Screen for HomeScreen {
 }
 
 impl HomeScreen {
-    fn submit(&mut self) -> Option<Box<dyn Screen>> {
+    fn submit(&mut self) -> Option<Box<dyn Screen + Sync + Send>> {
         match self.selected {
             0 => Some(Box::new(LoginScreen::default())),
             1 => Some(Box::new(RegisterScreen::default())),

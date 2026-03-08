@@ -32,7 +32,10 @@ pub struct BrowseScreen {
 }
 
 impl Screen for BrowseScreen {
-    fn handle_input(&mut self, key: (KeyCode, KeyModifiers)) -> Option<Box<dyn Screen>> {
+    fn handle_input(
+        &mut self,
+        key: (KeyCode, KeyModifiers),
+    ) -> Option<Box<dyn Screen + Sync + Send>> {
         self.error = None;
         match key {
             (KeyCode::Enter, _) => return self.submit(),
@@ -65,7 +68,7 @@ impl Screen for BrowseScreen {
 }
 
 impl BrowseScreen {
-    fn submit(&mut self) -> Option<Box<dyn Screen>> {
+    fn submit(&mut self) -> Option<Box<dyn Screen + Sync + Send>> {
         match self.state {
             BrowseScreenState::Browse => {
                 self.state = BrowseScreenState::Submit;
@@ -123,7 +126,7 @@ impl BrowseScreen {
         }
     }
 
-    fn escape(&mut self) -> Option<Box<dyn Screen>> {
+    fn escape(&mut self) -> Option<Box<dyn Screen + Sync + Send>> {
         match self.state {
             BrowseScreenState::Browse => Some(Box::new(HomeScreen::default())),
             BrowseScreenState::Submit => {
@@ -242,7 +245,7 @@ impl BrowseScreen {
         Ok(())
     }
 
-    fn reload(&mut self) -> Option<Box<dyn Screen>> {
+    fn reload(&mut self) -> Option<Box<dyn Screen + Sync + Send>> {
         let _ = self.user.reload().is_err_and(|x| {
             self.error = Some(x.to_string());
             true
