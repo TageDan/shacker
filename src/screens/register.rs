@@ -99,7 +99,7 @@ impl Screen for RegisterScreen {
 
         let color = match self.selected {
             2 => Style::new()
-                .fg(self.conf.theme.base0a)
+                .fg(self.conf.theme.base08)
                 .bg(self.conf.theme.base00),
             _ => Style::new()
                 .fg(self.conf.theme.base07)
