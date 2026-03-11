@@ -2601,24 +2601,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "sctf"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bcrypt",
- "clap",
- "ratatui",
- "rusqlite",
- "russh",
- "serde",
- "serde_json",
- "serde_yaml_ng",
- "terminput",
- "terminput-crossterm",
- "tokio",
-]
-
-[[package]]
 name = "sec1"
 version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2904,6 +2886,24 @@ dependencies = [
  "bytes",
  "pem-rfc7468 0.7.0",
  "sha2 0.10.9",
+]
+
+[[package]]
+name = "sshack"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bcrypt",
+ "clap",
+ "ratatui",
+ "rusqlite",
+ "russh",
+ "serde",
+ "serde_json",
+ "serde_yaml_ng",
+ "terminput",
+ "terminput-crossterm",
+ "tokio",
 ]
 
 [[package]]
