@@ -164,13 +164,13 @@ impl BrowseScreen {
 
     fn escape(&mut self) -> Option<Box<dyn Screen + Sync + Send>> {
         match self.state {
-            BrowseScreenState::Browse => Some(Box::new(HomeScreen::new(self.conf.clone()))),
             BrowseScreenState::Submit => {
                 self.scroll = 0;
                 self.submission.clear();
                 self.state = BrowseScreenState::Browse;
                 return None;
             }
+            _ => None,
         }
     }
 

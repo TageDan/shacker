@@ -198,19 +198,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2af50177e190e07a26ab74f8b1efbfe2ef87da2116221318cb1c2e82baf7de06"
 
 [[package]]
-name = "bcrypt"
-version = "0.19.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "523ab528ce3a7ada6597f8ccf5bd8d85ebe26d5edf311cad4d1d3cfb2d357ac6"
-dependencies = [
- "base64",
- "blowfish",
- "getrandom 0.4.2",
- "subtle",
- "zeroize",
-]
-
-[[package]]
 name = "bcrypt-pbkdf"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2902,7 +2889,6 @@ name = "sshack"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "bcrypt",
  "clap",
  "ratatui",
  "rusqlite",

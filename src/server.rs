@@ -3,7 +3,7 @@ use std::error::Error;
 use std::io::{Read, Write};
 use std::sync::Arc;
 
-use anyhow::Context;
+use anyhow::{Context, anyhow};
 use ratatui::backend::CrosstermBackend;
 use ratatui::crossterm::event::{Event, KeyCode, KeyModifiers};
 use ratatui::layout::Rect;
@@ -70,6 +70,7 @@ pub struct AppServer {
     clients: Arc<Mutex<HashMap<usize, (SshTerminal, App)>>>,
     id: usize,
     conf: Conf,
+    key: Arc<Mutex<Option<russh::keys::PublicKey>>>,
 }
 
 impl AppServer {
@@ -77,6 +78,7 @@ impl AppServer {
         Self {
             clients: Arc::new(Mutex::new(HashMap::new())),
             id: 0,
+            key: Arc::new(Mutex::new(None)),
             conf,
         }
     }
@@ -164,7 +166,11 @@ impl Handler for AppServer {
         };
 
         let terminal = Terminal::with_options(backend, options)?;
-        let app = App::new(self.conf.clone());
+        let key = self.key.lock().await;
+        let app = App::new(
+            self.conf.clone(),
+            key.clone().ok_or(anyhow!("no public key"))?,
+        );
 
         let mut clients = self.clients.lock().await;
         clients.insert(self.id, (terminal, app));
@@ -172,7 +178,8 @@ impl Handler for AppServer {
         Ok(true)
     }
 
-    async fn auth_publickey(&mut self, _: &str, _: &PublicKey) -> Result<Auth, Self::Error> {
+    async fn auth_publickey(&mut self, _: &str, key: &PublicKey) -> Result<Auth, Self::Error> {
+        *self.key.lock().await = Some(key.clone());
         Ok(Auth::Accept)
     }
 

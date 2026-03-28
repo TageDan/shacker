@@ -1,7 +1,7 @@
 
 
 ## Table: users
-|  id  (primary)  |  name  |  hashed_password  |
+|  id  (primary)  |  name  |   public_ssh_key  |
 |-----------------|--------|-------------------|
 |        1        |  Dz0N  |  ................ |
 

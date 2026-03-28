@@ -31,23 +31,21 @@ impl Screen for LeaderboardScreen {
     ) -> Option<Box<dyn Screen + Sync + Send>> {
         self.error = None;
         match key {
-            (KeyCode::Esc, _) => return self.escape(),
             (KeyCode::Tab, _) | (KeyCode::Down, _) => self.focus_next(),
             (KeyCode::BackTab, KeyModifiers::SHIFT) | (KeyCode::Up, _) => self.focus_prev(),
             (KeyCode::Char('r'), KeyModifiers::CONTROL) => return self.reload(),
             (KeyCode::Left, KeyModifiers::CONTROL) => {
-                return Some(match &self.user {
-                    Some(u) => Box::new(BrowseScreen::new(u.clone(), self.conf.clone())),
-                    None => Box::new(HomeScreen::new(self.conf.clone())),
-                });
+                return match &self.user {
+                    Some(u) => Some(Box::new(BrowseScreen::new(u.clone(), self.conf.clone()))),
+                    None => None, // TODO: make this an error
+                };
             }
             _ => (),
         };
         None
     }
     fn render(&mut self, f: &mut Frame) {
-        let commands =
-            "QUIT<CTRL+Q> LOG OUT<ESC> NAV<UP|DOWN|TAB> RLOAD<CTRL+R> NAV TABS<CTRL+LEFT|RIGHT>";
+        let commands = "QUIT<CTRL+Q> NAV<UP|DOWN|TAB> RLOAD<CTRL+R> NAV TABS<CTRL+LEFT|RIGHT>";
         let area = draw_screen_border(
             f,
             vec!["FLAGS", "LEADERBOARD"],
@@ -86,10 +84,6 @@ impl LeaderboardScreen {
         self.leaderboard = self
             .leaderboard
             .with_offset(self.leaderboard.offset().saturating_sub(1));
-    }
-
-    fn escape(&mut self) -> Option<Box<dyn Screen + Sync + Send>> {
-        Some(Box::new(HomeScreen::new(self.conf.clone())))
     }
 
     fn draw_leaderboard(&mut self, f: &mut Frame, a: Rect) {

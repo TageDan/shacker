@@ -17,9 +17,7 @@ use crate::{
 
 pub struct RegisterScreen {
     username: String,
-    password: String,
-    confirm: String,
-    selected: u8,
+    key: russh::keys::PublicKey,
     error: Option<String>,
     conf: Conf,
 }
@@ -34,9 +32,12 @@ impl Screen for RegisterScreen {
         match key {
             (KeyCode::Enter, _) => return self.submit(),
             (KeyCode::Char(c), _) => self.write_char(c),
-            (KeyCode::Tab, _) | (KeyCode::Down, _) => self.focus_next(),
-            (KeyCode::BackTab, KeyModifiers::SHIFT) | (KeyCode::Up, _) => self.focus_prev(),
-            (KeyCode::Esc, _) => return Some(Box::new(HomeScreen::new(self.conf.clone()))),
+            (KeyCode::Esc, _) => {
+                return Some(Box::new(HomeScreen::new(
+                    self.conf.clone(),
+                    self.key.clone(),
+                )));
+            }
             (KeyCode::Backspace, _) => self.delete(),
             _ => (),
         };
@@ -47,7 +48,7 @@ impl Screen for RegisterScreen {
             f,
             vec!["REGISTER"],
             0,
-            "QUIT<CTRL+Q> NAVIGATE<UP|DOWN|TAB> GO BACK<ESC> SUBMIT<ENTER>",
+            "QUIT<CTRL+Q> SUBMIT<ENTER>",
             self.error.as_deref(),
             None,
             &self.conf,
@@ -59,128 +60,57 @@ impl Screen for RegisterScreen {
             Constraint::Fill(1),
         ])
         .areas(area);
-        let [_, user, pass, conf, _] = Layout::vertical([
+        let [_, user, _] = Layout::vertical([
             Constraint::Fill(1),
-            Constraint::Length(3),
-            Constraint::Length(3),
             Constraint::Length(3),
             Constraint::Fill(1),
         ])
         .areas(col);
 
-        let color = match self.selected {
-            0 => Style::new()
-                .fg(self.conf.theme.base08)
-                .bg(self.conf.theme.base00),
-            _ => Style::new()
-                .fg(self.conf.theme.base05)
-                .bg(self.conf.theme.base00),
-        };
+        let color = Style::new()
+            .fg(self.conf.theme.base08)
+            .bg(self.conf.theme.base00);
+
         f.render_widget(
             Paragraph::new(self.username.as_str())
                 .block(Block::bordered().title_top("USERNAME"))
                 .style(color),
             user,
         );
-
-        let color = match self.selected {
-            1 => Style::new()
-                .fg(self.conf.theme.base08)
-                .bg(self.conf.theme.base00),
-            _ => Style::new()
-                .fg(self.conf.theme.base05)
-                .bg(self.conf.theme.base00),
-        };
-        f.render_widget(
-            Paragraph::new("*".repeat(self.password.len()))
-                .block(Block::bordered().title_top("PASSWORD"))
-                .style(color),
-            pass,
-        );
-
-        let color = match self.selected {
-            2 => Style::new()
-                .fg(self.conf.theme.base08)
-                .bg(self.conf.theme.base00),
-            _ => Style::new()
-                .fg(self.conf.theme.base05)
-                .bg(self.conf.theme.base00),
-        };
-        f.render_widget(
-            Paragraph::new("*".repeat(self.confirm.len()))
-                .block(Block::bordered().title_top("CONFIRM_PASSWORD"))
-                .style(color),
-            conf,
-        );
     }
 }
 
 impl RegisterScreen {
-    pub fn new(conf: Conf) -> Self {
+    pub fn new(conf: Conf, key: russh::keys::PublicKey) -> Self {
         Self {
             username: String::new(),
-            password: String::new(),
-            confirm: String::new(),
-            selected: 0,
+            key,
             error: None,
             conf,
         }
     }
 
     fn submit(&mut self) -> Option<Box<dyn Screen + Send + Sync>> {
-        if self.selected == 2 {
-            if self.password != self.confirm {
-                self.error = Some("passwords doesn't match".to_string());
+        if self.username.is_empty() {
+            self.error = Some("username can not be empty".to_string());
+            return None;
+        }
+        match database::User::register_user(&self.username, self.key.clone()) {
+            Err(e) => {
+                self.error = Some(e.to_string());
                 return None;
             }
-            if self.username.is_empty() || self.password.is_empty() {
-                self.error = Some("password can not be empty".to_string());
-                return None;
-            }
-            match database::User::register_user(&self.username, &self.password) {
-                Err(e) => {
-                    self.error = Some(e.to_string());
-                    return None;
-                }
-                Ok(u) => {
-                    return Some(Box::new(BrowseScreen::new(u, self.conf.clone())));
-                }
+            Ok(u) => {
+                return Some(Box::new(BrowseScreen::new(u, self.conf.clone())));
             }
         }
-        self.focus_next();
-        None
     }
 
     fn write_char(&mut self, c: char) {
-        match self.selected {
-            0 => self.username.push(c),
-            1 => self.password.push(c),
-            2 => self.confirm.push(c),
-            _ => (),
-        }
-    }
-
-    fn focus_next(&mut self) {
-        self.selected += 1;
-        self.selected = 2.min(self.selected);
-    }
-
-    fn focus_prev(&mut self) {
-        self.selected = self.selected.saturating_sub(1);
+        self.username.push(c);
     }
 
     fn delete(&mut self) {
-        match self.selected {
-            0 => {
-                self.username.pop();
-            }
-            1 => {
-                self.password.pop();
-            }
-            2 => {
-                self.confirm.pop();
-            }
-            _ => (),
-        }
+        self.username.pop();
     }
 }

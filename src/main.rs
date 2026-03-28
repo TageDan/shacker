@@ -47,7 +47,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
 fn app(terminal: &mut DefaultTerminal, conf: Conf) -> Result<(), Box<dyn Error>> {
     let mut app = App {
-        screen: Box::new(screens::home::HomeScreen::new(conf)),
+        screen: Box::new(screens::home::HomeScreen::new(
+            conf,
+            russh::keys::PublicKey::read_openssh_file(
+                &std::env::home_dir()
+                    .ok_or(
+                        "to run locally you still need a public key under ~/.shh/id_ed_25519.pub, this is just so that your account can be identified correctly",
+                    )?
+                    .join(".ssh/id_ed25519.pub"),
+            )?,
+        )),
     };
     loop {
         terminal.draw(|f| app.render(f))?;
@@ -73,9 +82,9 @@ impl App {
         self.screen.render(f)
     }
 
-    fn new(conf: Conf) -> Self {
+    fn new(conf: Conf, key: russh::keys::PublicKey) -> Self {
         Self {
-            screen: Box::new(HomeScreen::new(conf)),
+            screen: Box::new(HomeScreen::new(conf, key)),
         }
     }
 }

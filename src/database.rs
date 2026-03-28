@@ -25,7 +25,7 @@ pub fn create_missing_db() {
         Err(_) => panic!("failed to create db file"),
     };
     let conn = conn();
-    const QUERY: &str = "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name STRING, password_hash STRING)";
+    const QUERY: &str = "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name STRING, key STRING)";
     conn.execute(QUERY, [])
         .expect("could not create table users");
     const QUERY2: &str = "CREATE TABLE IF NOT EXISTS flags (id INTEGER PRIMARY KEY AUTOINCREMENT, name STRING, description STRING, points INTEGER, flag STRING)";
@@ -79,27 +79,25 @@ impl User {
         Ok(users)
     }
 
-    pub fn register_user(name: &String, password: &String) -> Result<User, Box<dyn Error>> {
+    pub fn register_user(name: &str, key: russh::keys::PublicKey) -> Result<User, Box<dyn Error>> {
         let conn = conn();
 
-        const QUERY: &str = "SELECT EXISTS (SELECT * FROM users WHERE name = ?1)";
+        const QUERY: &str = "SELECT EXISTS (SELECT * FROM users WHERE name = ?1 OR key = ?2)";
 
         let mut stmt = conn.prepare(QUERY)?;
-        let mut user = stmt.query([&name])?;
+        let mut user = stmt.query([name, &key.to_openssh()?])?;
 
         if user.next()?.is_some_and(|x| x.get(0).is_ok_and(|x| x)) {
             return Err(Box::new(std::io::Error::new(
                 ErrorKind::AlreadyExists,
-                "user already exists",
+                "username already taken",
             )));
         }
 
-        const QUERY2: &str = "INSERT INTO users (name, password_hash) VALUES (?1,?2)";
+        const QUERY2: &str = "INSERT INTO users (name, key) VALUES (?1,?2)";
         let mut stmt = conn.prepare(QUERY2)?;
 
-        let hash = bcrypt::hash(password, 13)?;
-
-        stmt.execute([name, &hash])?;
+        stmt.execute([name, &key.to_openssh()?])?;
 
         // explicit drop so that we can borrow again
         drop(user);
@@ -114,22 +112,16 @@ impl User {
         Ok(user)
     }
 
-    // TODO: this function is vulnerable to timing attacks that allow user enumeration. This isn't really a concern but it might still be fun to look into fixing it.
-    pub fn login(username: &str, password: &str) -> Result<User, Box<dyn Error>> {
+    pub fn login(key: russh::keys::PublicKey) -> Option<User> {
         let conn = conn();
 
-        const QUERY: &str = "SELECT * FROM users WHERE name = (?1)";
+        const QUERY: &str = "SELECT * FROM users WHERE key = (?1)";
 
-        let mut stmt = conn.prepare(QUERY)?;
-        let mut user = stmt.query([&username])?;
-        let user = user.next()?.ok_or("invalid password or username")?;
-        let hash: String = user.get(2)?;
+        let mut stmt = conn.prepare(QUERY).ok()?;
+        let mut user = stmt.query([&key.to_openssh().ok()?]).ok()?;
+        let user = user.next().ok()??;
 
-        if bcrypt::verify(password, &hash)? {
-            Ok(User::new(user.get(1)?, user.get(0)?))
-        } else {
-            Err("invalid password or username".into())
-        }
+        Some(User::new(user.get(1).ok()?, user.get(0).ok()?))
     }
 
     pub fn calculate_points(&self) -> Result<i32, Box<dyn Error>> {
