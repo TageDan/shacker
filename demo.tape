@@ -8,28 +8,11 @@ Set Height 900
 
 Type 'ssh -p 1337 localhost'
 
-Sleep 300ms
+Sleep 2s
+Enter  
 
-Enter
+Sleep 4s
 
-Sleep 2000ms
-
-Down
-Sleep 500ms
-
-Enter
-
-Sleep 500ms
-Type "Dz0N"
-Sleep 500ms
-Enter
-Type "Dz0N"
-Sleep 500ms
-Enter
-Type "Dz0N"
-Sleep 500ms
-Enter # Login
-Sleep 2000ms
 Down
 Sleep 1000ms
 Down
@@ -89,8 +72,6 @@ Up
 Sleep 1000ms
 Ctrl+Left
 
-Sleep 1000ms
-Escape
-Sleep 1500ms
+Sleep 2500ms
 Ctrl+q
 Sleep 1500ms

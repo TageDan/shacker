@@ -14,7 +14,7 @@ For now, the easiest way to install this is by using the provided install script
   cd SSHack
   ./install.sh
 ```
-If this fails, make sure that you have sqlite3-devel installed.
+If this fails, make sure that you have cargo and sqlite3-devel installed.
 If that doesn't solve it, feel free to submit an issue and if I (or you)
 find a solution I will add it here.
 
@@ -53,5 +53,5 @@ Some things that I am looking into adding right now are:
  * More configuration (ports, etc)
  * Tags for flags (categories)
  * Profile pages
- * Sort/search/filter for flags
+ * Sort/search/filter for flags (filter draft done)
  * Better loading of flags (not removing solves from users)

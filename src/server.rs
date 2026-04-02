@@ -6,7 +6,10 @@ use std::time::Duration;
 
 use anyhow::{Context, anyhow};
 use ratatui::backend::CrosstermBackend;
+use ratatui::crossterm::cursor::{Hide, Show};
 use ratatui::crossterm::event::{Event, KeyCode, KeyModifiers};
+use ratatui::crossterm::execute;
+use ratatui::crossterm::terminal::{Clear, EnterAlternateScreen, LeaveAlternateScreen};
 use ratatui::layout::Rect;
 use ratatui::{Terminal, TerminalOptions, Viewport};
 use russh::keys::ssh_key::rand_core::OsRng;
@@ -15,6 +18,7 @@ use russh::server::*;
 use russh::{Channel, ChannelId, Pty};
 use tokio::sync::Mutex;
 use tokio::sync::mpsc::{UnboundedSender, unbounded_channel};
+use tokio::task::yield_now;
 
 use crate::App;
 use crate::conf::Conf;
@@ -206,8 +210,18 @@ impl Handler for AppServer {
                     match terminput_crossterm::to_crossterm(ke)? {
                         Event::Key(k) => match (k.code, k.modifiers) {
                             (KeyCode::Char('q'), KeyModifiers::CONTROL) => {
-                                self.clients.lock().await.remove(&self.id);
-                                session.close(channel)?;
+                                let mut clients = self.clients.lock().await;
+                                clients.remove(&self.id);
+
+                                // Restore terminal
+                                let mut data_out = Vec::new();
+                                execute!(data_out, LeaveAlternateScreen, Show)?;
+                                let res = session.handle().data(channel, data_out.into()).await;
+                                if res.is_err() {
+                                    eprintln!("error restoring terminal")
+                                }
+
+                                let _ = session.handle().close(channel).await;
                             }
                             k => {
                                 let mut clients = self.clients.lock().await;
@@ -275,8 +289,8 @@ impl Handler for AppServer {
 
         let mut clients = self.clients.lock().await;
         let (terminal, _) = clients.get_mut(&self.id).unwrap();
+        execute!(terminal.backend_mut(), EnterAlternateScreen, Hide)?;
         terminal.resize(rect)?;
-
         session.channel_success(channel)?;
 
         Ok(())
