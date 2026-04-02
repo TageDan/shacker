@@ -105,7 +105,7 @@ pub fn draw_screen_border(
 pub trait Screen {
     fn handle_input(
         &mut self,
-        key: (KeyCode, KeyModifiers),
-    ) -> Option<Box<dyn Screen + Send + Sync>>;
+        key: Option<(KeyCode, KeyModifiers)>,
+    ) -> Option<Box<dyn Screen + Send>>;
     fn render(&mut self, f: &mut Frame);
 }

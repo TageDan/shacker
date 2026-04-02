@@ -25,8 +25,10 @@ pub struct RegisterScreen {
 impl Screen for RegisterScreen {
     fn handle_input(
         &mut self,
-        key: (KeyCode, KeyModifiers),
-    ) -> Option<Box<dyn Screen + Send + Sync>> {
+        key: Option<(KeyCode, KeyModifiers)>,
+    ) -> Option<Box<dyn Screen + Send>> {
+        // if no key is pressed, return early for now
+        let key = key?;
         // Remove error on input
         self.error = None;
         match key {
@@ -90,7 +92,7 @@ impl RegisterScreen {
         }
     }
 
-    fn submit(&mut self) -> Option<Box<dyn Screen + Send + Sync>> {
+    fn submit(&mut self) -> Option<Box<dyn Screen + Send>> {
         if self.username.is_empty() {
             self.error = Some("username can not be empty".to_string());
             return None;

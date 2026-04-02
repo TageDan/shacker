@@ -8,4 +8,22 @@ banner = '''
    ▄█    ███    ▄█    ███   ███    ███     ███    ███ ███    ███   ███ ▀███▄
  ▄████████▀   ▄████████▀    ███    █▀      ███    █▀  ████████▀    ███   ▀█▀
 '''
+# themes use [base16](https://github.com/chriskempson/base16)
+# all themes are themes I have found on the internet,
+# the raw files can be found in `~/.config/sshack/themes`
+# most themes are very much alike.
+# if you want some variation, try:
+# * mellow-purple
+# * nebula
+# * mocha
+# * icy
+# * caroline
+# * greenscreen
+#
+# you can also create your own themes
+# by creating a new file in the themes
+# folder and manually specifying all the
+# colors. Note that not all colors are used
+# so focus on them. should be base00, 01, 03,
+# 04, 05 and 08 but I might have forgot some.
 theme = "colors"

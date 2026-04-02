@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::io::{Read, Write};
 use std::sync::Arc;
+use std::time::Duration;
 
 use anyhow::{Context, anyhow};
 use ratatui::backend::CrosstermBackend;
@@ -85,12 +86,20 @@ impl AppServer {
 
     pub async fn run(&mut self) -> Result<(), Box<dyn Error>> {
         let clients = self.clients.clone();
+        // By introducing a interval we put a cap on the rendering rate whichhelps us reduce the bandwidth used over ssh, increasing performance.
+        let mut interval = tokio::time::interval(Duration::from_millis(1000 / 60));
         tokio::spawn(async move {
             loop {
+                interval.tick().await;
                 for (_, (terminal, app)) in clients.lock().await.iter_mut() {
                     _ = terminal.draw(|f| {
                         app.render(f);
                     });
+
+                    // Ugly fix, needs something better
+                    if let Some(s) = app.screen.handle_input(None) {
+                        app.screen = s;
+                    }
                 }
             }
         });
@@ -203,7 +212,7 @@ impl Handler for AppServer {
                             k => {
                                 let mut clients = self.clients.lock().await;
                                 let (_, app) = clients.get_mut(&self.id).unwrap();
-                                if let Some(s) = app.screen.handle_input(k) {
+                                if let Some(s) = app.screen.handle_input(Some(k)) {
                                     app.screen = s;
                                 }
                             }

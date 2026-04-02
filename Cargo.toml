@@ -11,6 +11,7 @@ rusqlite = "0.38.0"
 russh = "0.57.1"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_yaml_ng = "0.10.0"
+tachyonfx = { version = "0.25.0", features = ["sendable"] }
 terminput = "0.5.12"
 terminput-crossterm = "0.4.8"
 tokio = "1.50.0"

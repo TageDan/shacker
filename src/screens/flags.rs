@@ -1,4 +1,4 @@
-use std::{cmp::Ordering, error::Error};
+use std::{cmp::Ordering, error::Error, option::Option};
 
 use ratatui::{
     Frame,
@@ -18,6 +18,7 @@ use crate::{
     },
 };
 
+#[derive(PartialEq)]
 enum BrowseScreenState {
     Browse,
     Submit,
@@ -38,8 +39,11 @@ pub struct BrowseScreen {
 impl Screen for BrowseScreen {
     fn handle_input(
         &mut self,
-        key: (KeyCode, KeyModifiers),
-    ) -> Option<Box<dyn Screen + Sync + Send>> {
+        key: Option<(KeyCode, KeyModifiers)>,
+    ) -> Option<Box<dyn Screen + Send>> {
+        // if no key is pressed, return early for now
+        let key = key?;
+
         self.error = None;
         if self.filter.ui_active {
             if self.filter.handle_input(key) {
@@ -54,7 +58,11 @@ impl Screen for BrowseScreen {
             (KeyCode::BackTab, KeyModifiers::SHIFT) | (KeyCode::Up, _) => self.focus_prev(),
             (KeyCode::Backspace, _) => self.erase(),
             (KeyCode::Char('r'), KeyModifiers::CONTROL) => return self.reload(),
-            (KeyCode::Char('f'), KeyModifiers::CONTROL) => self.filter.ui_active = true,
+            (KeyCode::Char('f'), KeyModifiers::CONTROL)
+                if self.state == BrowseScreenState::Browse =>
+            {
+                self.filter.ui_active = true
+            }
             (KeyCode::Right, KeyModifiers::CONTROL) => {
                 return Some(Box::new(LeaderboardScreen::new(
                     Some(self.user.clone()),
@@ -70,13 +78,13 @@ impl Screen for BrowseScreen {
         let commands = match self.state {
             BrowseScreenState::Browse => {
                 if self.filter.ui_active {
-                    "QUIT<CTRL+Q> GO BACK<ESC> NAV<UP|DOWN|TAB> APPLY<ENTER>"
+                    "QUIT<CTRL+Q> GO BACK<ESC> CHANGE KIND<TAB> CHANGE VALUE<LEFT|RIGHT> APPLY<ENTER>"
                 } else {
-                    "QUIT<CTRL+Q> LOG OUT<ESC> NAV<UP|DOWN|TAB> SELECT<ENTER> RLOAD<CTRL+R> NAV TABS<CTRL+LEFT|RIGHT> FILTER<CTRL+F>"
+                    "QUIT<CTRL+Q> NAV<UP|DOWN|TAB> SELECT<ENTER> RELOAD<CTRL+R> TABS<CTRL+LEFT|RIGHT> FILTER<CTRL+F>"
                 }
             }
             BrowseScreenState::Submit => {
-                "QUIT<CTRL+Q> BROWSE<ESC> SCROLL<UP|DOWN> SUBMIT FLAG<ENTER> RLOAD<CTRL+R> NAV TABS<CTRL+LEFT|RIGHT>"
+                "QUIT<CTRL+Q> GO BACK<ESC> SCROLL<UP|DOWN> SUBMIT<ENTER> RELOAD<CTRL+R>"
             }
         };
         let area = draw_screen_border(
@@ -102,7 +110,7 @@ impl Screen for BrowseScreen {
 }
 
 impl BrowseScreen {
-    fn submit(&mut self) -> Option<Box<dyn Screen + Sync + Send>> {
+    fn submit(&mut self) -> Option<Box<dyn Screen + Send>> {
         match self.state {
             BrowseScreenState::Browse => {
                 self.state = BrowseScreenState::Submit;
@@ -162,7 +170,7 @@ impl BrowseScreen {
         }
     }
 
-    fn escape(&mut self) -> Option<Box<dyn Screen + Sync + Send>> {
+    fn escape(&mut self) -> Option<Box<dyn Screen + Send>> {
         match self.state {
             BrowseScreenState::Submit => {
                 self.scroll = 0;
@@ -305,7 +313,7 @@ impl BrowseScreen {
         Ok(())
     }
 
-    fn reload(&mut self) -> Option<Box<dyn Screen + Sync + Send>> {
+    fn reload(&mut self) -> Option<Box<dyn Screen + Send>> {
         let _ = self.user.reload().is_err_and(|x| {
             self.error = Some(x.to_string());
             true
@@ -398,7 +406,7 @@ impl SearchFilter {
         f.render_widget(Clear, row);
         f.render_widget(
             Block::bordered()
-                .title("Search")
+                .title("Filter")
                 .fg(conf.theme.base05)
                 .bg(conf.theme.base01),
             row,
@@ -425,13 +433,14 @@ impl SearchFilter {
                 );
                 f.render_widget(
                     Paragraph::new(format!("{}", b).as_str())
-                        .block(Block::bordered().title("value")),
+                        .block(Block::bordered().title("value"))
+                        .fg(conf.theme.base08),
                     value,
                 );
             }
             SearchFilterKind::Search(ref s) => {
                 f.render_widget(
-                    Paragraph::new("Search").block(Block::bordered().title("Search")),
+                    Paragraph::new("Search").block(Block::bordered().title("Kind")),
                     kind,
                 );
                 f.render_widget(

@@ -4,14 +4,14 @@ mod database;
 mod screens;
 mod server;
 mod theme;
-use std::error::Error;
+use std::{error::Error, time::Duration};
 
 use clap::Parser;
 use ratatui::{
     DefaultTerminal, Frame,
     crossterm::{
         self,
-        event::{KeyCode, KeyModifiers},
+        event::{KeyCode, KeyModifiers, poll},
     },
 };
 
@@ -60,21 +60,26 @@ fn app(terminal: &mut DefaultTerminal, conf: Conf) -> Result<(), Box<dyn Error>>
     };
     loop {
         terminal.draw(|f| app.render(f))?;
-        if let Some(k) = crossterm::event::read()?.as_key_press_event() {
-            match (k.code, k.modifiers) {
-                (KeyCode::Char('q'), KeyModifiers::CONTROL) => return Ok(()),
-                k => {
-                    if let Some(t) = app.screen.handle_input(k) {
-                        app.screen = t;
+        if poll(Duration::from_millis(50)).is_ok_and(|x| x) {
+            if let Some(k) = crossterm::event::read()?.as_key_press_event() {
+                match (k.code, k.modifiers) {
+                    (KeyCode::Char('q'), KeyModifiers::CONTROL) => return Ok(()),
+                    k => {
+                        if let Some(t) = app.screen.handle_input(Some(k)) {
+                            app.screen = t;
+                        }
                     }
                 }
             }
+        }
+        if let Some(t) = app.screen.handle_input(None) {
+            app.screen = t;
         }
     }
 }
 
 struct App {
-    screen: Box<dyn screens::screen::Screen + Send + Sync>,
+    screen: Box<dyn screens::screen::Screen + Send>,
 }
 
 impl App {

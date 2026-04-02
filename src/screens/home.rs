@@ -1,11 +1,19 @@
-use std::time::{Duration, Instant};
+use std::{
+    sync::{Arc, Mutex},
+    time::{Duration, Instant},
+};
 
 use ratatui::{
     crossterm::event::{KeyCode, KeyModifiers},
     layout::{Constraint, Layout},
-    style::{Style, Stylize},
+    style::{Color, Style, Stylize},
     text::Text,
     widgets::{Block, Paragraph},
+};
+use tachyonfx::{
+    CellFilter, Effect, EffectManager, EffectTimer,
+    Interpolation::QuadOut,
+    fx::{self, Direction},
 };
 
 use crate::{conf::Conf, screens::flags::BrowseScreen};
@@ -19,16 +27,17 @@ use crate::{
 
 pub struct HomeScreen {
     conf: Conf,
-    time: Instant,
     key: russh::keys::PublicKey,
+    last_time: Instant,
+    effect_text: Effect,
 }
 
 impl Screen for HomeScreen {
     fn handle_input(
         &mut self,
-        _key: (KeyCode, KeyModifiers),
-    ) -> Option<Box<dyn Screen + Sync + Send>> {
-        if Instant::now() - self.time > Duration::from_secs(3) {
+        _key: Option<(KeyCode, KeyModifiers)>,
+    ) -> Option<Box<dyn Screen + Send>> {
+        if self.effect_text.done() {
             match User::login(self.key.clone()) {
                 Some(u) => Some(Box::new(BrowseScreen::new(u, self.conf.clone()))),
                 None => Some(Box::new(RegisterScreen::new(
@@ -77,15 +86,43 @@ impl Screen for HomeScreen {
                 .bg(self.conf.theme.base00),
             banner,
         );
+
+        let delta_time = self.last_time.elapsed();
+        self.last_time = Instant::now();
+
+        // In your render loop
+        self.effect_text
+            .process(delta_time.into(), f.buffer_mut(), banner);
     }
 }
 
 impl HomeScreen {
     pub fn new(conf: Conf, key: russh::keys::PublicKey) -> Self {
+        let text1 = fx::slide_in(
+            tachyonfx::Motion::LeftToRight,
+            10,
+            0,
+            conf.theme.base00,
+            EffectTimer::from_ms(500, tachyonfx::Interpolation::QuadInOut),
+        )
+        .with_filter(CellFilter::NonEmpty);
+
+        let text2 = fx::slide_out(
+            tachyonfx::Motion::LeftToRight,
+            10,
+            0,
+            conf.theme.base00,
+            EffectTimer::from_ms(500, tachyonfx::Interpolation::QuadInOut),
+        )
+        .with_filter(CellFilter::NonEmpty);
+
+        let text = fx::sequence(&[text1, fx::sleep(1000), text2]);
+
         Self {
-            time: Instant::now(),
             conf,
             key,
+            last_time: Instant::now(),
+            effect_text: text,
         }
     }
 }

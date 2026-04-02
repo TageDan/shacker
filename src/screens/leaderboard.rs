@@ -27,8 +27,10 @@ pub struct LeaderboardScreen {
 impl Screen for LeaderboardScreen {
     fn handle_input(
         &mut self,
-        key: (KeyCode, KeyModifiers),
-    ) -> Option<Box<dyn Screen + Sync + Send>> {
+        key: Option<(KeyCode, KeyModifiers)>,
+    ) -> Option<Box<dyn Screen + Send>> {
+        // if no key is pressed, return early for now
+        let key = key?;
         self.error = None;
         match key {
             (KeyCode::Tab, _) | (KeyCode::Down, _) => self.focus_next(),
@@ -113,12 +115,14 @@ impl LeaderboardScreen {
 
         let table = Table::new(rows, [Constraint::Fill(1), Constraint::Fill(1)])
             .header(header)
+            .highlight_symbol("  ")
+            .highlight_spacing(ratatui::widgets::HighlightSpacing::Always)
             .block(Block::new().borders(Borders::RIGHT));
 
         f.render_stateful_widget(table, a, &mut self.leaderboard);
     }
 
-    fn reload(&mut self) -> Option<Box<dyn Screen + Sync + Send>> {
+    fn reload(&mut self) -> Option<Box<dyn Screen + Send>> {
         self.users = User::get_all().ok()?;
         self.users.sort_by_key(|x| -x.points());
         None
