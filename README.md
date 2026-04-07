@@ -63,11 +63,12 @@ Some things that I am looking into adding right now are:
 #### v.0.2.0 [ ]
  [X] File download for challanges over sftp
  [ ] Teams (optional)
- [ ] Password protected ctfs (optional)
+ [X] Password protected ctfs (optional)
  [X] Make animations optional
  [ ] About page (optional)
  [X] Include SSHack version
  [ ] Improve instructions
+ [ ] Fix pasting bug
 
 #### v0.1.0 [X]
  [X] Basic tui 

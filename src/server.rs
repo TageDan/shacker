@@ -21,8 +21,8 @@ use russh_sftp::protocol::{File, FileAttributes, Name, Status, StatusCode, Versi
 use tokio::sync::Mutex;
 use tokio::sync::mpsc::{UnboundedSender, unbounded_channel};
 
-use crate::App;
 use crate::conf::Conf;
+use crate::{App, database};
 
 type SshTerminal = Terminal<CrosstermBackend<TerminalHandle>>;
 
@@ -173,24 +173,6 @@ impl Handler for AppServer {
         channel: Channel<Msg>,
         _session: &mut Session,
     ) -> Result<bool, Self::Error> {
-        // let terminal_handle = TerminalHandle::start(session.handle(), channel.id()).await;
-
-        // let backend = CrosstermBackend::new(terminal_handle);
-
-        // // the correct viewport area will be set when the client request a pty
-        // let options = TerminalOptions {
-        //     viewport: Viewport::Fixed(Rect::default()),
-        // };
-
-        // let terminal = Terminal::with_options(backend, options)?;
-        // let key = self.key.lock().await;
-        // let app = App::new(
-        //     self.conf.clone(),
-        //     key.clone().ok_or(anyhow!("no public key"))?,
-        // );
-
-        // let mut clients = self.ctf_clients.lock().await;
-        // clients.insert(self.id, (terminal, app));
         self.new_channels.lock().await.insert(channel.id(), channel);
 
         Ok(true)
@@ -209,6 +191,12 @@ impl Handler for AppServer {
     ) -> Result<(), Self::Error> {
         if name == "sftp" {
             if let Some(channel) = self.new_channels.lock().await.remove(&channel_id) {
+                // Only allw users to get files (importnat for password protected ctfs)
+                if self.key.is_none() || database::User::login(self.key.clone().unwrap()).is_none()
+                {
+                    session.channel_failure(channel_id)?;
+                    return Ok(());
+                }
                 let sftp = SftpSession::default();
                 session.channel_success(channel_id)?;
                 russh_sftp::server::run(channel.into_stream(), sftp).await;
@@ -226,6 +214,7 @@ impl Handler for AppServer {
         data: &[u8],
         session: &mut Session,
     ) -> Result<(), Self::Error> {
+        println!("data: {:#?}", data);
         let ctf_client = self.ctf_clients.lock().await.contains_key(&self.id);
         match ctf_client {
             true => {
