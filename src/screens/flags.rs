@@ -1,11 +1,11 @@
 use std::{cmp::Ordering, error::Error, option::Option};
 
 use ratatui::{
-    Frame,
     crossterm::event::{KeyCode, KeyModifiers},
     layout::{Constraint, Layout, Margin, Rect},
     style::{Style, Stylize},
     widgets::{Block, Borders, Cell, Clear, Paragraph, Row, Table, TableState},
+    Frame,
 };
 
 use crate::{
@@ -14,7 +14,7 @@ use crate::{
     screens::{
         home::HomeScreen,
         leaderboard::LeaderboardScreen,
-        screen::{Screen, draw_screen_border},
+        screen::{draw_screen_border, Screen},
     },
 };
 
@@ -274,7 +274,7 @@ impl BrowseScreen {
                 .fg(self.conf.theme.base04)
                 .bg(self.conf.theme.base00),
             BrowseScreenState::Submit => Style::new()
-                .fg(self.conf.theme.base07)
+                .fg(self.conf.theme.base05)
                 .bg(self.conf.theme.base00),
         };
 
