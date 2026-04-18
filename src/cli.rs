@@ -24,7 +24,7 @@ pub enum Commands {
         #[arg(short, long)]
         local: bool,
         /// open leaderboard page without logging in
-        #[arg(long, default_value_t = true)]
+        #[arg(long, default_value_t = false)]
         leaderboard: bool,
     },
     /// Add/Delete/List flags
