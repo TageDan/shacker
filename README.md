@@ -62,7 +62,8 @@ Some things that I am looking into adding right now are:
 
 #### v.0.3.0 [ ]
  [ ] Teams (optional)
- [ ] Docker container
+ [X] Docker container
+ [ ] Spin up challange container on demand
  [X] leaderboard flag to open the ctf in leaderboard mode.
 
 #### v.0.2.0 [X]

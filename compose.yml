@@ -1,0 +1,14 @@
+services:
+  sshack:
+    build: .
+    ports:
+      - 1337:1337
+    volumes:
+      - type: bind
+        source: ~/.config/sshack/
+        target: /home/sshack/.config/sshack/
+      - sshack-data:/home/sshack/.sshack/
+
+volumes:
+  sshack-data:
+  sshack-config:
