@@ -1,3 +1,6 @@
+pub mod screens;
+pub mod server;
+
 use ratatui::Frame;
 
 use ratatui::crossterm;
@@ -9,11 +12,11 @@ use std::time::Duration;
 
 use ratatui::crossterm::event::poll;
 
-use crate::cli::{Args, Commands};
-use crate::screens;
-use crate::screens::leaderboard::LeaderboardScreen;
+use crate::cli::Args;
+use crate::screen::Screen;
+use screens::leaderboard::LeaderboardScreen;
 
-use crate::screens::home::HomeScreen;
+use screens::home::HomeScreen;
 
 use std::error::Error;
 
@@ -63,7 +66,7 @@ pub(crate) fn app(
 }
 
 pub struct App {
-    pub screen: Box<dyn screens::screen::Screen + Send>,
+    pub screen: Box<dyn Screen + Send>,
 }
 
 impl App {

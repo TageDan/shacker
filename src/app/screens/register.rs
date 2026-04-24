@@ -1,18 +1,14 @@
+use crate::{
+    app::screens::{flags::BrowseScreen, home::HomeScreen},
+    conf::Conf,
+    database,
+    screen::{Screen, draw_screen_border},
+};
 use ratatui::{
     crossterm::event::{KeyCode, KeyModifiers},
     layout::{Constraint, Layout},
     style::Style,
     widgets::{Block, Paragraph},
-};
-
-use crate::{
-    conf::Conf,
-    database,
-    screens::{
-        flags::BrowseScreen,
-        home::HomeScreen,
-        screen::{Screen, draw_screen_border},
-    },
 };
 
 pub struct RegisterScreen {

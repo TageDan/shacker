@@ -1,21 +1,18 @@
-use std::{cmp::Ordering, error::Error, option::Option};
+use std::{error::Error, option::Option};
 
 use ratatui::{
+    Frame,
     crossterm::event::{KeyCode, KeyModifiers},
     layout::{Constraint, Layout, Margin, Rect},
     style::{Style, Stylize},
     widgets::{Block, Borders, Cell, Clear, Paragraph, Row, Table, TableState},
-    Frame,
 };
 
 use crate::{
+    app::screens::leaderboard::LeaderboardScreen,
     conf::Conf,
     database::{Flag, User},
-    screens::{
-        home::HomeScreen,
-        leaderboard::LeaderboardScreen,
-        screen::{draw_screen_border, Screen},
-    },
+    screen::{Screen, draw_screen_border},
 };
 
 #[derive(PartialEq)]

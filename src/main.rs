@@ -1,20 +1,18 @@
+mod admin_app;
 mod app;
 mod cli;
 mod conf;
 mod database;
-mod screens;
-mod server;
+mod screen;
 mod theme;
 
-use std::{error::Error, time::Duration};
+use std::error::Error;
 
 use clap::Parser;
-use ratatui::crossterm::{self};
 
 use crate::{
     cli::{Args, Commands},
     conf::Conf,
-    screens::{home::HomeScreen, leaderboard::LeaderboardScreen},
 };
 
 // inspired by: https://github.com/Eugeny/russh/blob/main/russh/examples/ratatui_app.rs
@@ -26,8 +24,18 @@ async fn main() -> Result<(), Box<dyn Error>> {
         Commands::Run { local, leaderboard } => {
             let conf = Conf::get();
             if !local {
-                let mut server = server::AppServer::new(conf, args);
-                server.run().await.expect("Failed running server");
+                let args_1 = args.clone();
+                let conf_1 = conf.clone();
+                let task1 = tokio::task::spawn(async {
+                    let mut server = app::server::AppServer::new(conf_1, args_1);
+                    server.run().await.expect("Failed running server")
+                });
+                let task2 = tokio::task::spawn(async {
+                    let mut server = admin_app::server::AdminAppServer::new(conf, args);
+                    server.run().await.expect("Failed running server")
+                });
+                task1.await.expect("Failed running app server");
+                task2.await.expect("Failed running admin server");
             } else {
                 let mut term = ratatui::init();
                 let res = app::app(&mut term, conf, leaderboard);

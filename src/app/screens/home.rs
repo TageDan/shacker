@@ -12,14 +12,12 @@ use tachyonfx::{
     fx::{self},
 };
 
-use crate::{conf::Conf, screens::flags::BrowseScreen};
 use crate::{
-    database::User,
-    screens::{
-        register::RegisterScreen,
-        screen::{Screen, draw_screen_border},
-    },
+    app::screens::flags::BrowseScreen,
+    conf::Conf,
+    screen::{Screen, draw_screen_border},
 };
+use crate::{app::screens::register::RegisterScreen, database::User};
 
 pub struct HomeScreen {
     conf: Conf,
