@@ -156,7 +156,6 @@ pub struct Flag {
     description: String,
     flag: String,
     points: i32,
-    #[serde(default)]
     id: i32,
     #[serde(skip_serializing, default)]
     solved: bool,

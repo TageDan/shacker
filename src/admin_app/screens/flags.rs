@@ -9,19 +9,13 @@ use ratatui::{
 };
 
 use crate::{
+    admin_app::screens,
     conf::Conf,
-    database::{self, Flag},
+    database::Flag,
     screen::{Screen, draw_screen_border},
 };
 
-#[derive(PartialEq)]
-enum AdminScreenState {
-    Browse,
-    Submit,
-}
-
 pub struct AdminScreen {
-    state: AdminScreenState,
     flags: Vec<Flag>,
     error: Option<String>,
     table_state: TableState,
@@ -38,25 +32,37 @@ impl Screen for AdminScreen {
     ) -> Option<Box<dyn Screen + Send>> {
         // if no key is pressed, return early for now
         let key = key?;
+
+        self.error = None;
+        if self.filter.ui_active {
+            if self.filter.handle_input(key) {
+                self.reload();
+            };
+            return None;
+        }
+        match key {
+            (KeyCode::Enter, _) => return self.submit(),
+            (KeyCode::Tab, _) | (KeyCode::Down, _) => self.focus_next(),
+            (KeyCode::BackTab, KeyModifiers::SHIFT) | (KeyCode::Up, _) => self.focus_prev(),
+            (KeyCode::Char('r'), KeyModifiers::CONTROL) => return self.reload(),
+            (KeyCode::Char('f'), KeyModifiers::CONTROL) => self.filter.ui_active = true,
+            _ => (),
+        };
         None
     }
     fn render(&mut self, f: &mut Frame) {
-        let commands = match self.state {
-            AdminScreenState::Browse => {
-                if self.filter.ui_active {
-                    "^Q[QUIT] Esc[BACK] ⇥[KIND] ⇄[VALUE] ↵[APPLY]"
-                } else {
-                    "^Q[QUIT] ⇵[NAV] ↵[SELECT] ^R[RELOAD] ^⇄[TABS] ^F[FILTER]"
-                }
-            }
-            AdminScreenState::Submit => "^Q[QUIT] Esc[BACK] ⇵[SCROLL] ↵[SUBMIT] ^R[RELOAD]",
+        let commands = if self.filter.ui_active {
+            "^Q[QUIT] Esc[BACK] ⇥[KIND] ⇄[VALUE] ↵[APPLY]"
+        } else {
+            "^Q[QUIT] ⇵[NAV] ↵[EDIT] ^R[RELOAD] ^F[FILTER]"
         };
+
         let area = draw_screen_border(
             f,
             if self.conf.about.is_some() {
-                vec!["FLAGS", "LEADERBOARD", "ABOUT"]
+                vec!["FLAGS"]
             } else {
-                vec!["FLAGS", "LEADERBOARD"]
+                vec!["FLAGS"]
             },
             0,
             commands,
@@ -64,25 +70,31 @@ impl Screen for AdminScreen {
             None,
             &self.conf,
         );
+        let [col1, col2] =
+            Layout::horizontal([Constraint::Fill(1), Constraint::Fill(1)]).areas(area);
+
+        self.draw_table(f, col1);
+        if let Err(e) = self.draw_preview(f, col2) {
+            self.error = Some(e.to_string());
+        };
+        if self.filter.ui_active {
+            self.filter.render(f, area, &self.conf);
+        }
     }
 }
 
 impl AdminScreen {
     fn submit(&mut self) -> Option<Box<dyn Screen + Send>> {
+        //Some(Box::new(screens::edit)),
         None
     }
 
     pub fn new(conf: Conf) -> Self {
-        let mut error = None;
-        let flags = match database::Flag::get_all() {
-            Ok(f) => f,
-            Err(e) => {
-                error = Some(e.to_string());
-                vec![]
-            }
+        let (flags, error) = match Flag::get_all() {
+            Ok(flags) => (flags, None),
+            Err(e) => (vec![], Some(e.to_string())),
         };
         Self {
-            state: AdminScreenState::Browse,
             table_state: TableState::default().with_selected(0),
             flags,
             error,
@@ -94,49 +106,15 @@ impl AdminScreen {
     }
 
     fn focus_next(&mut self) {
-        match self.state {
-            AdminScreenState::Browse => self.table_state.select_next(),
-            AdminScreenState::Submit => self.scroll = self.scroll.saturating_add(1),
-        }
+        self.table_state.select_next();
     }
 
     fn focus_prev(&mut self) {
-        match self.state {
-            AdminScreenState::Browse => self.table_state.select_previous(),
-            AdminScreenState::Submit => self.scroll = self.scroll.saturating_sub(1),
-        }
-    }
-
-    fn escape(&mut self) -> Option<Box<dyn Screen + Send>> {
-        match self.state {
-            AdminScreenState::Submit => {
-                self.scroll = 0;
-                self.submission.clear();
-                self.state = AdminScreenState::Browse;
-                return None;
-            }
-            _ => None,
-        }
-    }
-
-    fn erase(&mut self) {
-        match self.state {
-            AdminScreenState::Browse => (),
-            AdminScreenState::Submit => {
-                let _ = self.submission.pop();
-            }
-        }
-    }
-
-    fn write_char(&mut self, c: char) {
-        match self.state {
-            AdminScreenState::Browse => (),
-            AdminScreenState::Submit => self.submission.push(c),
-        }
+        self.table_state.select_previous();
     }
 
     fn draw_table(&mut self, f: &mut Frame, a: Rect) {
-        let header = ["Name", "Description", "Points", "Solved"]
+        let header = ["Name", "Description", "Points"]
             .into_iter()
             .map(Cell::from)
             .collect::<Row>()
@@ -166,8 +144,6 @@ impl AdminScreen {
                 Constraint::Fill(1),
                 Constraint::Fill(2),
                 Constraint::Fill(1),
-                // seven for 'Solved' +1
-                Constraint::Length(7),
             ],
         )
         .header(header)
@@ -204,23 +180,13 @@ impl AdminScreen {
         ])
         .areas(a);
 
-        let style1 = match self.state {
-            AdminScreenState::Browse => Style::new()
-                .fg(self.conf.theme.base04)
-                .bg(self.conf.theme.base00),
-            AdminScreenState::Submit => Style::new()
-                .fg(self.conf.theme.base05)
-                .bg(self.conf.theme.base00),
-        };
+        let style1 = Style::new()
+            .fg(self.conf.theme.base04)
+            .bg(self.conf.theme.base00);
 
-        let style2 = match self.state {
-            AdminScreenState::Browse => Style::new()
-                .fg(self.conf.theme.base04)
-                .bg(self.conf.theme.base00),
-            AdminScreenState::Submit => Style::new()
-                .fg(self.conf.theme.base08)
-                .bg(self.conf.theme.base00),
-        };
+        let style2 = Style::new()
+            .fg(self.conf.theme.base04)
+            .bg(self.conf.theme.base00);
 
         let title = Paragraph::new(format!(
             "{}\nPoints - {}{}",
@@ -242,12 +208,31 @@ impl AdminScreen {
 
         f.render_widget(description_text, description);
 
-        let input_box = Paragraph::new(self.submission.as_str())
-            .block(Block::bordered().title_top("Submit Flag").style(style2));
+        let input_box =
+            Paragraph::new(flag.flag()).block(Block::bordered().title_top("Flag").style(style2));
 
         f.render_widget(input_box, submission);
 
         Ok(())
+    }
+
+    fn reload(&mut self) -> Option<Box<dyn Screen + Send>> {
+        match Flag::get_all() {
+            Ok(flags) => match self.filter.search_kind {
+                SearchFilterKind::None => self.flags = flags,
+                SearchFilterKind::Solved(b) => {
+                    self.flags = flags.into_iter().filter(|x| x.solved() == b).collect()
+                }
+                SearchFilterKind::Search(ref s) => {
+                    self.flags = flags
+                        .into_iter()
+                        .filter(|x| x.name().contains(s) || x.description().contains(s))
+                        .collect()
+                }
+            },
+            Err(e) => self.error = Some(e.to_string()),
+        };
+        None
     }
 }
 

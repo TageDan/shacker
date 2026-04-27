@@ -1,3 +1,4 @@
+pub mod edit;
 pub mod screens;
 pub mod server;
 
